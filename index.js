@@ -1,10 +1,13 @@
 const { Before, After, When } = require('@cucumber/cucumber');
 const { remote } = require('webdriverio');
 const memory = require('@cucumber-e2e/memory2');
+const { po } = require('@cucumber-e2e/po2');
 const getElement = require('./getElement');
 
 Before(async function () {
-    global.browser = await remote(config.default.browser);
+    global.browser = await remote(config.browser);
+    po.init(browser, { timeout: 10000 });
+    po.register(config.pageObject);
 });
 
 After(async function() {
@@ -30,7 +33,7 @@ When(/^click '(.+?)'$/, async function(alias) {
 });
 
 When(/^clear '(.+?)'$/, async function(alias) {
-    const element = await po.getElement(alias);
+    const element = await getElement(alias);
     await element.waitForDisplayed();
     await element.clearValue();
 });
