@@ -20,6 +20,7 @@
     "@cucumber-e2e/memory2": "^1.0.0",
     "@cucumber-e2e/po2": "^1.0.4",
     "@cucumber/cucumber": "^8.2.2",
+    "chai": "^4.3.6",
     "webdriverio": "^7.20.1"
   }
 }
