@@ -1,8 +1,27 @@
-const { Before, After, When } = require('@cucumber/cucumber');
+const { Before, After, When, Then, defineParameterType } = require('@cucumber/cucumber');
 const { remote } = require('webdriverio');
 const memory = require('@cucumber-e2e/memory2');
 const { po } = require('@cucumber-e2e/po2');
-const getElement = require('./getElement');
+const { wait, BECOME_VISIBLE, WAIT_ELEMENT_TIMEOUT } = require('wait');
+const { verify } = require('verify');
+
+defineParameterType({
+    name: 'element',
+    regexp: /'(.+)'/,
+    transformer: async p => po.getElement(await memory.getValue(p))
+});
+
+defineParameterType({
+    name: 'reverse',
+    regexp: /'( not)'/,
+    transformer: p => p ?? false
+});
+
+defineParameterType({
+    name: 'validation',
+    regexp: /'(be equal|contain)'/,
+    transformer: p => p
+});
 
 Before(async function () {
     global.browser = await remote(config.browser);
@@ -14,26 +33,35 @@ After(async function() {
     await browser.deleteSession();
 });
 
-When(/open '(.+)' url/, async function(url) {
-    const parsedUrl = memory.getValue(url);
-    await browser.url(parsedUrl);
+When('open {memory} url', async function(url) {
+    await browser.url(await url);
 });
 
-When(/type '(.*?)' to '(.+)'/, async function (value, alias) {
-    const parsedValue = memory.getValue(value);
-    const element = await getElement(alias);
-    await element.waitForDisplayed();
-    await element.addValue(parsedValue);
+When('type {string} to {element}', async function(value, element) {
+    await (await element).waitForDisplayed();
+    await (await element).addValue(await value);
 });
 
-When(/^click '(.+?)'$/, async function(alias) {
-    const element = await getElement(alias);
-    await element.waitForDisplayed();
-    await element.click();
+When('click {element}', async function(element) {
+    await (await element).waitForDisplayed();
+    await (await element).click();
 });
 
-When(/^clear '(.+?)'$/, async function(alias) {
-    const element = await getElement(alias);
-    await element.waitForDisplayed();
-    await element.clearValue();
+When('clear {element}', async function(element) {
+    await (await element).waitForDisplayed();
+    await (await element).clearValue();
 });
+
+Then(
+    'text of {element} element should{reverse} {validation} {memory}',
+    async function (element, reverse, validation, value) {
+        await wait(element, BECOME_VISIBLE, WAIT_ELEMENT_TIMEOUT);
+        const elementText = await (await element).getText();
+        verify({
+            ar: elementText,
+            er: value,
+            reverse,
+            validation
+        });
+    }
+);
